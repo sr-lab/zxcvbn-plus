@@ -229,7 +229,30 @@ scoring =
     Math.max guesses, min_guesses
 
   repeat_guesses: (match) ->
-    match.base_guesses * match.repeat_count
+    count_char = (chars, char) ->
+      # Count occurrences of given character in string.
+      accum = (x, y) ->
+        if y == char then x + 1 else x
+      chars.reduce accum, 0
+    shannon_entropy = (str) ->
+      # Split string into array of characters against counts.
+      chars = str.split ''
+      counts = chars.map (char) ->
+        [char, count_char chars, char]
+      # Deduplicate character/count map.
+      dedupe = (x, y) ->
+        duped = x.some (z) ->
+          z[0] == y[0]
+        if duped then x else x.concat [y]
+      counts = counts.reduce dedupe, []
+      # Calculate entropy.
+      len = chars.length
+      entropy = (x, y) ->
+        freq = y[1] / len
+        x - (freq * (Math.log(freq) / Math.log(2)))
+      counts.reduce entropy, 0.0
+    multiplier = Math.round 5.8841 * Math.exp(1.7235 * shannon_entropy(match.token))
+    match.base_guesses * multiplier
 
   sequence_guesses: (match) ->
     first_chr = match.token.charAt(0)
